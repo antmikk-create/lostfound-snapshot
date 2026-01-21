@@ -2,46 +2,23 @@
 
 on:
   schedule:
-    - cron: "0 * * * *"  # Tunnin välein (esim. 01:00, 02:00...)
-  
-  # Manuaalinen käynnistys
+    - cron: "0 * * * *"  # Tunnin välein
   workflow_dispatch:
-    inputs:
-      force_rebuild:
-        description: "Force rebuild all pages"
-        required: false
-        default: "false"
-        type: boolean
-  
-  # Build kun koodi päivittyy
   push:
-    branches: [ main, master ]
-  
-  # Build kun secrets päivittyvät
-  repository_dispatch:
-    types: [ new-data-available ]
+    branches: [ main ]
 
 permissions:
   contents: write
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: \${{ steps.deployment.outputs.page_url }}
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -54,17 +31,17 @@ jobs:
       
       - name: Create Firebase credentials
         run: |
-          echo '\${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > firebase-service-account.json
-          echo "Firebase credentials file created (\$(wc -c < firebase-service-account.json) bytes)"
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > firebase-service-account.json
+          echo "Firebase credentials file created"
       
       - name: Build snapshot
         run: npm run build
         env:
-          SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: \${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BUILD_TIMESTAMP: \${{ github.run_number }}
-          GITHUB_SHA: \${{ github.sha }}
-          GITHUB_USERNAME: \${{ github.repository_owner }}
+          SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
+          SUPABASE_SERVICE_ROLE_KEY: "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          BUILD_TIMESTAMP: "${{ github.run_number }}"
+          GITHUB_SHA: "${{ github.sha }}"
+          GITHUB_USERNAME: "${{ github.repository_owner }}"
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -75,23 +52,13 @@ jobs:
           path: "./dist"
       
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Show deployment info
+      - name: Show success message
         run: |
           echo "✅ Build completed successfully!"
-          echo "📊 Build number: \${{ github.run_number }}"
-          echo "🔗 Pages URL: \${{ steps.deployment.outputs.page_url }}"
-          echo "📅 Timestamp: \$(date -Iseconds)"
-      
-      - name: Create summary
-        if: always()
-        run: |
-          echo "## 🚀 Deployment Summary" >> \$GITHUB_STEP_SUMMARY
-          echo "" >> \$GITHUB_STEP_SUMMARY
-          echo "- **Status:** \${{ job.status }}" >> \$GITHUB_STEP_SUMMARY
-          echo "- **Build:** #\${{ github.run_number }}" >> \$GITHUB_STEP_SUMMARY
-          echo "- **Commit:** \`\${{ github.sha }}\`" >> \$GITHUB_STEP_SUMMARY
-          echo "- **URL:** [\${{ steps.deployment.outputs.page_url }}](\${{ steps.deployment.outputs.page_url }})" >> \$GITHUB_STEP_SUMMARY
-          echo "- **Time:** \$(date)" >> \$GITHUB_STEP_SUMMARY
+          echo "📊 Build number: ${{ github.run_number }}"
+          echo "🔗 Your site will be available at:"
+          echo "   https://${{ github.repository_owner }}.github.io/lostfound-snapshot/"
