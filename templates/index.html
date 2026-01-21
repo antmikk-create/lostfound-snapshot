@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Löytyneet tavarat - Snapshot</title>
+    <meta name="description" content="Automaattisesti päivittyvä lista löydetyistä tavaroista">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="site-title">
+                    <span class="emoji">📦</span> Löytyneet tavarat
+                </h1>
+                <p class="site-subtitle">
+                    Automaattisesti päivittyvä lista löydetyistä tavaroista
+                    <span class="build-info">
+                        Päivitetty: <time datetime="<!-- BUILD_TIMESTAMP -->"><!-- BUILD_TIMESTAMP --></time>
+                        (build <!-- BUILD_ID -->)
+                    </span>
+                </p>
+            </div>
+        </header>
+
+        <!-- STATS -->
+        <!-- STATS -->
+
+        <!-- FILTERS -->
+        <div class="filters-container">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="areaFilter" class="filter-label">
+                        <svg class="filter-icon" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        Alue:
+                    </label>
+                    <select id="areaFilter" class="filter-select">
+                        <option value="">Kaikki alueet</option>
+                        <!-- Areas populated by JS -->
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="categoryFilter" class="filter-label">
+                        <svg class="filter-icon" viewBox="0 0 24 24">
+                            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+                        </svg>
+                        Kategoria:
+                    </label>
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="">Kaikki kategoriat</option>
+                        <!-- Categories populated by JS -->
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="statusFilter" class="filter-label">
+                        <svg class="filter-icon" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                        Tila:
+                    </label>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">Kaikki</option>
+                        <option value="approved">Avoinna</option>
+                        <option value="resolved">Ratkaistu</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group search-group">
+                    <div class="search-container">
+                        <svg class="search-icon" viewBox="0 0 24 24">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                        <input type="text" 
+                               id="searchInput" 
+                               placeholder="Etsi nimellä tai kuvauksella..."
+                               class="search-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEMS GRID -->
+        <div class="items-grid" id="itemsContainer">
+            <!-- ITEMS_LIST -->
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="pagination" id="pagination">
+            <!-- JS generates pagination -->
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>
+                    Tämä sivu on staattinen snapshot <a href="https://lostrefound.blogspot.com" target="_blank">Lost&Found</a>-sovelluksesta.
+                    Data päivittyy automaattisesti tunnin välein.
+                </p>
+                <p class="footer-links">
+                    <a href="/data.json" target="_blank">JSON-data</a> |
+                    <a href="/sitemap.xml" target="_blank">Sitemap</a> |
+                    <a href="https://github.com/<!-- GITHUB_USERNAME -->/lostfound-snapshot" target="_blank">Lähdekoodi</a>
+                </p>
+                <p class="footer-note">
+                    Build ID: <!-- BUILD_ID --> | 
+                    Viimeisin päivitys: <!-- BUILD_TIMESTAMP -->
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- SVG SPRITE FOR ICONS -->
+    <svg style="display: none;">
+        <defs>
+            <symbol id="icon-location" viewBox="0 0 24 24">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </symbol>
+            <symbol id="icon-category" viewBox="0 0 24 24">
+                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+            </symbol>
+            <symbol id="icon-date" viewBox="0 0 24 24">
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+            </symbol>
+        </defs>
+    </svg>
+
+    <!-- CLIENT-SIDE JS -->
+    <script>
+        // Wait for DOM to load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 Loading data...');
+            
+            // Load data from JSON
+            fetch('/data.json')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('✅ Data loaded:', data.items.length, 'items');
+                    window.allItems = data.items;
+                    initializeFilters(data.items);
+                    renderItems(data.items);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading data:', error);
+                    document.getElementById('itemsContainer').innerHTML = 
+                        '<div class="error-message">' +
+                        '   <p>❌ Virhe datan latauksessa</p>' +
+                        '   <p>Yritä myöhemmin uudelleen.</p>' +
+                        '</div>';
+                });
+            
+            function initializeFilters(items) {
+                // Get unique areas
+                const areas = [...new Set(items.map(i => i.area).filter(Boolean))].sort();
+                const areaSelect = document.getElementById('areaFilter');
+                
+                areas.forEach(area => {
+                    const option = document.createElement('option');
+                    option.value = area;
+                    option.textContent = area;
+                    areaSelect.appendChild(option);
+                });
+                
+                // Get unique categories
+                const categories = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
+                const categorySelect = document.getElementById('categoryFilter');
+                
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = getCategoryDisplayName(category);
+                    categorySelect.appendChild(option);
+                });
+                
+                // Add event listeners
+                document.getElementById('areaFilter').addEventListener('change', filterItems);
+                document.getElementById('categoryFilter').addEventListener('change', filterItems);
+                document.getElementById('statusFilter').addEventListener('change', filterItems);
+                document.getElementById('searchInput').addEventListener('input', filterItems);
+            }
+            
+            function filterItems() {
+                const area = document.getElementById('areaFilter').value;
+                const category = document.getElementById('categoryFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                
+                const filtered = window.allItems.filter(item => {
+                    // Area filter
+                    if (area && item.area !== area) return false;
+                    
+                    // Category filter
+                    if (category && item.category !== category) return false;
+                    
+                    // Status filter
+                    if (status) {
+                        if (status === 'approved' && item.status !== 'APPROVED') return false;
+                        if (status === 'resolved' && item.status !== 'RESOLVED') return false;
+                    }
+                    
+                    // Search filter
+                    if (search) {
+                        const searchText = (item.title + ' ' + (item.description || '')).toLowerCase();
+                        if (!searchText.includes(search)) return false;
+                    }
+                    
+                    return true;
+                });
+                
+                renderItems(filtered);
+            }
+            
+            function renderItems(items) {
+                const container = document.getElementById('itemsContainer');
+                
+                if (items.length === 0) {
+                    container.innerHTML = 
+                        '<div class="no-items">' +
+                        '   <p>😔 Ei löytynyt ilmoituksia valituilla suodattimilla.</p>' +
+                        '   <p>Kokeile muuttaa hakuehtoja.</p>' +
+                        '</div>';
+                    return;
+                }
+                
+                let html = '';
+                
+                items.forEach(item => {
+                    const statusClass = item.status.toLowerCase();
+                    const statusText = item.status === 'APPROVED' ? 'Avoin' : 'Ratkaistu';
+                    
+                    html += \`
+                        <article class="item-card" data-id="\${item.id}" data-category="\${item.category}">
+                            <div class="item-image-container">
+                                \${item.imageUrl ? \`
+                                    <img src="\${item.imageUrl}" 
+                                         alt="\${escapeHtml(item.title)}" 
+                                         class="item-image"
+                                         loading="lazy">
+                                \` : \`
+                                    <div class="no-image">
+                                        <span>Ei kuvaa</span>
+                                    </div>
+                                \`}
+                                <div class="item-status \${statusClass}">
+                                    \${statusText}
+                                </div>
+                            </div>
+                            
+                            <div class="item-content">
+                                <h3 class="item-title">\${escapeHtml(item.title)}</h3>
+                                
+                                <div class="item-meta">
+                                    <span class="meta-item">
+                                        <svg class="icon"><use href="#icon-location"></use></svg>
+                                        \${escapeHtml(item.area || 'Ei määritelty')}
+                                    </span>
+                                    
+                                    <span class="meta-item">
+                                        <svg class="icon"><use href="#icon-category"></use></svg>
+                                        \${getCategoryDisplayName(item.category)}
+                                    </span>
+                                    
+                                    <span class="meta-item">
+                                        <svg class="icon"><use href="#icon-date"></use></svg>
+                                        \${formatDate(item.timestamp)}
+                                    </span>
+                                </div>
+                                
+                                <p class="item-description">
+                                    \${truncateText(escapeHtml(item.description || ''), 100)}
+                                </p>
+                                
+                                <div class="item-actions">
+                                    <span class="item-id">#\${item.id}</span>
+                                </div>
+                            </div>
+                        </article>
+                    \`;
+                });
+                
+                container.innerHTML = html;
+            }
+            
+            // Helper functions
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            function truncateText(text, maxLength) {
+                if (text.length <= maxLength) return text;
+                return text.substring(0, maxLength) + '...';
+            }
+            
+            function formatDate(isoString) {
+                if (!isoString) return 'Ei päivämäärää';
+                const date = new Date(isoString);
+                return date.toLocaleDateString('fi-FI');
+            }
+            
+            function getCategoryDisplayName(category) {
+                const map = {
+                    'ELECTRONICS': 'Elektroniikka',
+                    'CLOTHING': 'Vaatteet',
+                    'DOCUMENTS': 'Asiakirjat',
+                    'KEYS': 'Avaimet',
+                    'WALLET': 'Lompakko',
+                    'JEWELRY': 'Koru',
+                    'BAG': 'Laukku',
+                    'OTHER': 'Muu'
+                };
+                return map[category] || category;
+            }
+        });
+    </script>
+</body>
+</html>
