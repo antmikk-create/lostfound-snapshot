@@ -74,6 +74,8 @@ async function fetchData() {
       .get();
 
     const items = [];
+    const areasSet = new Set(); // Kerää alueet automaattisesti
+    
     snapshot.forEach(doc => {
       const data = doc.data();
       
@@ -90,11 +92,14 @@ async function fetchData() {
         }
       }
 
+      const area = data.area || "Tuntematon";
+      areasSet.add(area); // Lisää alue listaan
+
       items.push({
         id: doc.id,
         title: data.title || "Ei nimeä",
         description: data.description || "",
-        area: data.area || "Tuntematon",
+        area: area,
         category: data.category || "OTHER",
         status: data.status || "APPROVED",
         timestamp: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -103,21 +108,21 @@ async function fetchData() {
       });
     });
 
+    // Muunna Set -> Array ja lajittele aakkosjärjestykseen
+    const areas = Array.from(areasSet).sort();
+    
     console.log(`✅ Found ${items.length} items`);
+    console.log(`🗺️  Areas found: ${areas.length} (${areas.join(', ')})`);
     
-    // Debug: näytä Facebook-linkit
-    const facebookCount = items.filter(i => i.facebookLink).length;
-    console.log(`📘 Facebook-linkkejä löytyi: ${facebookCount}`);
-    
-    return items;
+    return { items, areas };
   } catch (error) {
     console.error("❌ Error fetching from Firebase:", error.message);
-    return []; // Palauta tyhjä array virheen sattuessa
+    return { items: [], areas: [] }; // Palauta tyhjä array virheen sattuessa
   }
 }
 
 // 2. Generoi HTML
-function generateHtml(items) {
+function generateHtml({ items, areas }) {
   const date = new Date();
   const formattedDate = date.toLocaleDateString("fi-FI", {
     weekday: "long",
@@ -130,8 +135,31 @@ function generateHtml(items) {
 
   const approvedCount = items.filter(i => i.status === "APPROVED").length;
   const resolvedCount = items.filter(i => i.status === "RESOLVED").length;
-  const uniqueAreas = new Set(items.map(i => i.area).filter(Boolean)).size;
+  const uniqueAreas = areas.length;
   const facebookCount = items.filter(i => i.facebookLink).length;
+
+  // Luo aluevalikko HTML
+  const areaOptions = areas.map(area => 
+    `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`
+  ).join('');
+  
+  const areaFilterHtml = `
+    <div class="area-filter-container">
+      <label for="areaFilter" class="filter-label">
+        <svg class="filter-icon" viewBox="0 0 24 24">
+          <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+        </svg>
+        Suodata alueen mukaan:
+      </label>
+      <select id="areaFilter" class="area-filter">
+        <option value="">Kaikki alueet (${items.length} ilmoitusta)</option>
+        ${areaOptions}
+      </select>
+      <div class="area-stats">
+        <span id="selectedAreaCount">${items.length}</span> ilmoitusta näytetään
+      </div>
+    </div>
+  `;
 
   // Luo HTML-sisältö
   let itemsHtml = "";
@@ -144,7 +172,7 @@ function generateHtml(items) {
     `;
   } else {
     itemsHtml = items.map(item => `
-      <article class="item-card" data-id="${item.id}" data-category="${item.category}">
+      <article class="item-card" data-id="${item.id}" data-category="${item.category}" data-area="${escapeHtml(item.area)}">
         <div class="item-image-container">
           ${item.imageUrl ? `
             <img src="${item.imageUrl}" 
@@ -268,6 +296,70 @@ function generateHtml(items) {
       display: inline-block;
     }
     
+    .area-filter-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .filter-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #4b5563;
+      white-space: nowrap;
+    }
+    
+    .filter-icon {
+      width: 20px;
+      height: 20px;
+      fill: #667eea;
+    }
+    
+    .area-filter {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: white;
+      color: #333;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    
+    .area-filter:hover {
+      border-color: #9ca3af;
+    }
+    
+    .area-filter:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .area-stats {
+      font-size: 0.9rem;
+      color: #6b7280;
+      padding: 5px 10px;
+      background: #f3f4f6;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    
+    #selectedAreaCount {
+      font-weight: bold;
+      color: #667eea;
+    }
+    
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -307,12 +399,16 @@ function generateHtml(items) {
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
     }
     
     .item-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+    
+    .item-card.hidden {
+      display: none;
     }
     
     .item-image-container {
@@ -486,6 +582,8 @@ function generateHtml(items) {
       h1 { font-size: 2rem; }
       .items-grid { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr; }
+      .area-filter-container { flex-direction: column; align-items: stretch; }
+      .area-filter { min-width: auto; }
     }
     
     @media (max-width: 480px) {
@@ -504,6 +602,8 @@ function generateHtml(items) {
   </header>
 
   <main>
+    ${areaFilterHtml}
+    
     <div class="stats-grid">
       <div class="stat-card">
         <span class="stat-number">${items.length}</span>
@@ -558,6 +658,72 @@ function generateHtml(items) {
       </symbol>
     </defs>
   </svg>
+
+  <script>
+    // Alueen suodatus JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+      const areaFilter = document.getElementById('areaFilter');
+      const itemsContainer = document.getElementById('itemsContainer');
+      const itemCards = document.querySelectorAll('.item-card');
+      const selectedAreaCount = document.getElementById('selectedAreaCount');
+      
+      // Alusta URL-hashista jos on valittu alue
+      const urlParams = new URLSearchParams(window.location.hash.substring(1));
+      const initialArea = urlParams.get('area');
+      if (initialArea) {
+        areaFilter.value = initialArea;
+        filterByArea(initialArea);
+      }
+      
+      // Suodatus tapahtuma
+      areaFilter.addEventListener('change', function() {
+        const selectedArea = this.value;
+        filterByArea(selectedArea);
+        
+        // Päivitä URL hash (ei lataa sivua uudelleen)
+        if (selectedArea) {
+          window.location.hash = 'area=' + encodeURIComponent(selectedArea);
+        } else {
+          window.location.hash = '';
+        }
+      });
+      
+      // Suodata ilmoitukset alueen mukaan
+      function filterByArea(area) {
+        let visibleCount = 0;
+        
+        itemCards.forEach(card => {
+          const cardArea = card.getAttribute('data-area');
+          
+          if (!area || cardArea === area) {
+            card.classList.remove('hidden');
+            visibleCount++;
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+        
+        // Päivitä näytettyjen ilmoitusten määrä
+        selectedAreaCount.textContent = visibleCount;
+        
+        // Päivitä stats-korttien numeroita (valinnainen)
+        updateStatsForArea(area, visibleCount);
+      }
+      
+      // Päivitä stats-kortit suodatetulle alueelle (valinnainen)
+      function updateStatsForArea(area, visibleCount) {
+        // Voit lisätä tähän logiikan statsien päivittämiseen
+        // Esim. näytetään vain suodatetun alueen Facebook-linkit jne.
+      }
+      
+      // Automaattinen skrollaus aluevalintaan mobiilissa (valinnainen)
+      areaFilter.addEventListener('focus', function() {
+        if (window.innerWidth < 768) {
+          this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    });
+  </script>
 </body>
 </html>`;
 }
@@ -567,11 +733,11 @@ async function main() {
   console.log("🚀 Starting snapshot build...");
   
   try {
-    // Hae data
-    const items = await fetchData();
+    // Hae data ja alueet
+    const { items, areas } = await fetchData();
     
     // Generoi HTML
-    const html = generateHtml(items);
+    const html = generateHtml({ items, areas });
     
     // Varmista dist-kansio
     const distDir = path.join(__dirname, "../dist");
@@ -597,7 +763,8 @@ async function main() {
         imageUrl: item.imageUrl,
         facebookLink: item.facebookLink,
         timestamp: item.timestamp
-      }))
+      })),
+      areas: areas // Lisätty myös alueet JSON-dataan
     };
     
     await writeFile(
@@ -609,6 +776,7 @@ async function main() {
     console.log(`✅ Build completed!`);
     console.log(`📁 Output: ${outputPath}`);
     console.log(`📊 Items: ${items.length}`);
+    console.log(`🗺️  Areas: ${areas.length} (${areas.join(', ')})`);
     console.log(`📘 Facebook-linkkejä: ${items.filter(i => i.facebookLink).length}`);
     console.log(`⚡ Build ID: ${process.env.BUILD_TIMESTAMP || "local"}`);
     
