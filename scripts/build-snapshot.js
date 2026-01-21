@@ -1,4 +1,4 @@
-﻿import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
@@ -98,11 +98,17 @@ async function fetchData() {
         category: data.category || "OTHER",
         status: data.status || "APPROVED",
         timestamp: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
-        imageUrl: imageUrl
+        imageUrl: imageUrl,
+        facebookLink: data.facebookLink || null
       });
     });
 
     console.log(`✅ Found ${items.length} items`);
+    
+    // Debug: näytä Facebook-linkit
+    const facebookCount = items.filter(i => i.facebookLink).length;
+    console.log(`📘 Facebook-linkkejä löytyi: ${facebookCount}`);
+    
     return items;
   } catch (error) {
     console.error("❌ Error fetching from Firebase:", error.message);
@@ -125,6 +131,7 @@ function generateHtml(items) {
   const approvedCount = items.filter(i => i.status === "APPROVED").length;
   const resolvedCount = items.filter(i => i.status === "RESOLVED").length;
   const uniqueAreas = new Set(items.map(i => i.area).filter(Boolean)).size;
+  const facebookCount = items.filter(i => i.facebookLink).length;
 
   // Luo HTML-sisältö
   let itemsHtml = "";
@@ -156,9 +163,22 @@ function generateHtml(items) {
         </div>
         
         <div class="item-content">
-          <h3 class="item-title">
-            ${escapeHtml(item.title)}
-          </h3>
+          <div class="item-header">
+            <h3 class="item-title">
+              ${escapeHtml(item.title)}
+            </h3>
+            ${item.facebookLink ? `
+              <a href="${escapeHtml(item.facebookLink)}" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 class="facebook-icon-link"
+                 title="Facebook-ilmoitus">
+                <svg class="facebook-icon" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+            ` : ''}
+          </div>
           
           <div class="item-meta">
             <span class="meta-item">
@@ -183,6 +203,17 @@ function generateHtml(items) {
           
           <div class="item-actions">
             <span class="item-id">#${item.id}</span>
+            ${item.facebookLink ? `
+              <a href="${escapeHtml(item.facebookLink)}" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 class="btn-facebook">
+                <svg class="facebook-icon-small" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                Facebook
+              </a>
+            ` : ''}
           </div>
         </div>
       </article>
@@ -331,10 +362,43 @@ function generateHtml(items) {
       padding: 1.5rem;
     }
     
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+    
     .item-title {
       font-size: 1.25rem;
-      margin-bottom: 0.75rem;
       color: #1f2937;
+      margin: 0;
+      flex: 1;
+    }
+    
+    .facebook-icon-link {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 10px;
+      color: #1877F2;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    
+    .facebook-icon-link:hover {
+      opacity: 1;
+    }
+    
+    .facebook-icon {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+    
+    .facebook-icon-small {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
     }
     
     .item-meta {
@@ -374,19 +438,22 @@ function generateHtml(items) {
       border-top: 1px solid #e5e7eb;
     }
     
-    .btn-details {
-      background: #667eea;
+    .btn-facebook {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1877F2;
       color: white;
-      padding: 8px 16px;
+      padding: 6px 12px;
       border-radius: 6px;
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 500;
       transition: background 0.2s;
     }
     
-    .btn-details:hover {
-      background: #5a67d8;
+    .btn-facebook:hover {
+      background: #166FE5;
     }
     
     .item-id {
@@ -424,6 +491,8 @@ function generateHtml(items) {
     @media (max-width: 480px) {
       header { padding: 1.5rem; }
       .item-meta { flex-direction: column; gap: 0.5rem; }
+      .item-header { flex-direction: column; }
+      .facebook-icon-link { margin-left: 0; margin-top: 5px; }
     }
   </style>
 </head>
@@ -451,6 +520,10 @@ function generateHtml(items) {
       <div class="stat-card">
         <span class="stat-number">${uniqueAreas}</span>
         <span class="stat-label">Eri aluetta</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">${facebookCount}</span>
+        <span class="stat-label">Facebook-ilmoitusta</span>
       </div>
     </div>
 
@@ -522,6 +595,7 @@ async function main() {
         status: item.status,
         description: item.description,
         imageUrl: item.imageUrl,
+        facebookLink: item.facebookLink,
         timestamp: item.timestamp
       }))
     };
@@ -535,6 +609,7 @@ async function main() {
     console.log(`✅ Build completed!`);
     console.log(`📁 Output: ${outputPath}`);
     console.log(`📊 Items: ${items.length}`);
+    console.log(`📘 Facebook-linkkejä: ${items.filter(i => i.facebookLink).length}`);
     console.log(`⚡ Build ID: ${process.env.BUILD_TIMESTAMP || "local"}`);
     
   } catch (error) {
