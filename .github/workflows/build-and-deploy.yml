@@ -1,4 +1,4 @@
-﻿name: Build and Deploy Snapshot
+name: Build and Deploy Snapshot
 
 on:
   schedule:
@@ -29,19 +29,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Create Firebase credentials
+      - name: Verify environment variables
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > firebase-service-account.json
-          echo "Firebase credentials file created"
+          echo "🔍 Verifying secrets are available:"
+          echo "FIREBASE_SERVICE_ACCOUNT_JSON is set: $([ -n \"${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}\" ] && echo '✅ YES' || echo '❌ NO')"
+          echo "SUPABASE_URL is set: $([ -n \"${{ secrets.SUPABASE_URL }}\" ] && echo '✅ YES' || echo '❌ NO')"
+          echo "SUPABASE_SERVICE_ROLE_KEY is set: $([ -n \"${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\" ] && echo '✅ YES' || echo '❌ NO')"
+      
+      - name: Create Firebase credentials file (varmuuden vuoksi)
+        run: |
+          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" ]; then
+            echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > firebase-service-account.json
+            echo "✅ Firebase credentials file created"
+            echo "📄 File size: $(wc -c < firebase-service-account.json) bytes"
+          else
+            echo "❌ WARNING: FIREBASE_SERVICE_ACCOUNT_JSON is empty!"
+            exit 1
+          fi
       
       - name: Build snapshot
         run: npm run build
         env:
+          # KAIKKI TÄRKEÄT YMPÄRISTÖMUUTTUJAT:
+          FIREBASE_SERVICE_ACCOUNT_JSON: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}"
           SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
           SUPABASE_SERVICE_ROLE_KEY: "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
           BUILD_TIMESTAMP: "${{ github.run_number }}"
           GITHUB_SHA: "${{ github.sha }}"
           GITHUB_USERNAME: "${{ github.repository_owner }}"
+          GITHUB_REPOSITORY: "${{ github.repository }}"
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -60,5 +76,14 @@ jobs:
         run: |
           echo "✅ Build completed successfully!"
           echo "📊 Build number: ${{ github.run_number }}"
-          echo "🔗 Your site will be available at:"
+          echo "🏷️ Commit SHA: ${{ github.sha }}"
+          echo "👤 Owner: ${{ github.repository_owner }}"
+          echo "📁 Repository: ${{ github.repository }}"
+          echo ""
+          echo "🌐 Your site will be available at:"
           echo "   https://${{ github.repository_owner }}.github.io/lostfound-snapshot/"
+          echo ""
+          echo "📊 Build details:"
+          echo "   - Generated: dist/index.html"
+          echo "   - Data file: dist/data.json"
+          echo "   - Next build: In 1 hour"
