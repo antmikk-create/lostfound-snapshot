@@ -1,0 +1,87 @@
+name: Build and Deploy Snapshot
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # Tunnin välein
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Create Firebase credentials file
+        id: create_firebase_creds
+        run: |
+          # Kirjoita JSON suoraan tiedostoon ilman shell-käsittelyä
+          cat > firebase-service-account.json << 'EOF'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          EOF
+          
+          # Tarkista että tiedosto luotiin
+          if [ -f "firebase-service-account.json" ]; then
+            echo "✅ Firebase credentials file created"
+            echo "📄 File size: $(wc -c < firebase-service-account.json) bytes"
+            
+            # Testaa että JSON on validia
+            if jq empty firebase-service-account.json 2>/dev/null; then
+              echo "✅ JSON is valid"
+              echo "project_id=$(jq -r '.project_id' firebase-service-account.json)" >> $GITHUB_OUTPUT
+            else
+              echo "❌ JSON is invalid"
+              exit 1
+            fi
+          else
+            echo "❌ Failed to create Firebase credentials file"
+            exit 1
+          fi
+      
+      - name: Build snapshot
+        run: npm run build
+        env:
+          # Käytä ympäristömuuttujaa SUORAAN
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUILD_TIMESTAMP: ${{ github.run_number }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_USERNAME: ${{ github.repository_owner }}
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./dist"
+      
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Show success message
+        run: |
+          echo "✅ Build completed successfully!"
+          echo "📊 Build number: ${{ github.run_number }}"
+          echo "🔗 Your site will be available at:"
+          echo "   https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
