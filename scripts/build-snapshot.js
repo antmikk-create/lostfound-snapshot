@@ -424,12 +424,26 @@ function generateHtml({ items, areas }) {
     }
     
     .item-image-placeholder {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100%;
-      color: #999;
+      color: #64748b;
       font-size: 0.9rem;
+      background-color: #f1f5f9;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 120'%3E%3Cstyle%3Etext%7Bfill:%232e7d32;font-family:'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:800;opacity:0.22;%7D%3C/style%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle'%3ELost%20Re%20Found%3C/text%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 70%;
+    }
+    
+    .item-image-placeholder span {
+      position: relative;
+      z-index: 1;
+      background: rgba(255,255,255,0.8);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.5rem;
     }
     
     .item-status {
