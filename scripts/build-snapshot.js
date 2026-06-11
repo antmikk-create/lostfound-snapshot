@@ -128,6 +128,9 @@ async function fetchData() {
     return { items, areas };
   } catch (error) {
     console.error("❌ Error fetching from Firebase:", error.message);
+    if (process.env.GITHUB_ACTIONS) {
+      throw error;
+    }
     return { items: [], areas: [] };
   }
 }
