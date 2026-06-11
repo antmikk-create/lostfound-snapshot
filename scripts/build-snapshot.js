@@ -7,25 +7,23 @@ import { fileURLToPath } from "url";
 import { config } from "dotenv";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Lataa .env tiedosto
 config({ path: path.join(__dirname, "../.env") });
 
-// Apufunktiot
 function escapeHtml(text) {
   if (!text) return "";
-  return text
+  return String(text)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/\"/g, """)
     .replace(/'/g, "&#039;");
 }
 
 function truncateText(text, maxLength) {
   if (!text) return "";
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + "...";
+  const s = String(text);
+  if (s.length <= maxLength) return s;
+  return s.substring(0, maxLength) + "...";
 }
 
 function formatDate(isoString) {
@@ -35,9 +33,9 @@ function formatDate(isoString) {
     return date.toLocaleDateString("fi-FI", {
       day: "2-digit",
       month: "2-digit",
-      year: "numeric"
+      year: "numeric",
     });
-  } catch (e) {
+  } catch {
     return "Virheellinen päivämäärä";
   }
 }
@@ -51,88 +49,80 @@ function getCategoryName(category) {
     WALLET: "Lompakko",
     JEWELRY: "Koru",
     BAG: "Laukku",
-    OTHER: "Muu"
+    OTHER: "Muu",
   };
   return map[category] || category;
 }
 
-// 1. Hae data Firebasesta
 async function fetchData() {
   console.log("📥 Fetching data from Firebase...");
 
   try {
-    // Alusta Firebase
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
     initializeApp({ credential: cert(serviceAccount) });
     const db = getFirestore();
 
-    // Hae hyväksytyt ja ratkaistut itemit
-    const snapshot = await db.collection("lostItems")
+    const snapshot = await db
+      .collection("lostItems")
       .where("status", "in", ["APPROVED", "RESOLVED"])
       .orderBy("timestamp", "desc")
-      .limit(100) // Rajoita määrää aluksi
+      .limit(100)
       .get();
 
     const items = [];
-    const areasSet = new Set(); // Kerää alueet automaattisesti
-    
-    snapshot.forEach(doc => {
+    const areasSet = new Set();
+
+    snapshot.forEach((doc) => {
       const data = doc.data();
-      
+    const items = [];
+    const areasSet = new Set();
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+
       // Muunna kuvan URL oikeaan muotoon
       let imageUrl = null;
       if (data.imageUrl1) {
-        // Jos URL on jo täydellinen
         if (data.imageUrl1.includes("http")) {
           imageUrl = data.imageUrl1;
         } else {
-          // Muodosta Supabase URL
           const fileName = data.imageUrl1.replace("lost-items/", "");
           imageUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/lost-items/${fileName}`;
         }
       }
 
       const area = data.area || "Tuntematon";
-      areasSet.add(area); // Lisää alue listaan
+      areasSet.add(area);
 
-<<<<<<< HEAD
       const category = data.category || "OTHER";
       const type = category === "LOST" ? "LOST" : "FOUND";
 
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
       items.push({
         id: doc.id,
         title: data.title || "Ei nimeä",
         description: data.description || "",
-        area: area,
-<<<<<<< HEAD
+        area,
         category,
         type,
-=======
-        category: data.category || "OTHER",
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
         status: data.status || "APPROVED",
         timestamp: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
-        imageUrl: imageUrl,
-        facebookLink: data.facebookLink || null
+        imageUrl,
+        facebookLink: data.facebookLink || null,
       });
     });
 
-    // Muunna Set -> Array ja lajittele aakkosjärjestykseen
     const areas = Array.from(areasSet).sort();
-    
+
     console.log(`✅ Found ${items.length} items`);
-    console.log(`🗺️  Areas found: ${areas.length} (${areas.join(', ')})`);
-    
+    console.log(`🗺️  Areas found: ${areas.length} (${areas.join(", ")})`);
+
     return { items, areas };
   } catch (error) {
     console.error("❌ Error fetching from Firebase:", error.message);
-    return { items: [], areas: [] }; // Palauta tyhjä array virheen sattuessa
+    return { items: [], areas: [] };
   }
 }
 
-// 2. Generoi HTML
 function generateHtml({ items, areas }) {
   const date = new Date();
   const formattedDate = date.toLocaleDateString("fi-FI", {
@@ -141,38 +131,61 @@ function generateHtml({ items, areas }) {
     month: "long",
     day: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 
-  const approvedCount = items.filter(i => i.status === "APPROVED").length;
-  const resolvedCount = items.filter(i => i.status === "RESOLVED").length;
+  const approvedCount = items.filter((i) => i.status === "APPROVED").length;
+  const resolvedCount = items.filter((i) => i.status === "RESOLVED").length;
   const uniqueAreas = areas.length;
-  const facebookCount = items.filter(i => i.facebookLink).length;
+  const facebookCount = items.filter((i) => i.facebookLink).length;
 
-  // Luo aluevalikko HTML
-  const areaOptions = areas.map(area => 
-    `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`
-  ).join('');
-  
+  const areaOptions = areas
+    .map(
+      (area) => `
+        <option value="${escapeHtml(area)}">${escapeHtml(area)}</option>
+      `,
+    )
+    .join("");
+
+  const itemTypeCounts = {
+    FOUND: items.filter((i) => i.type === "FOUND").length,
+    LOST: items.filter((i) => i.type === "LOST").length,
+  };
+
   const areaFilterHtml = `
-    <div class="area-filter-container">
-      <label for="areaFilter" class="filter-label">
-        <svg class="filter-icon" viewBox="0 0 24 24">
-          <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
-        </svg>
-        Suodata alueen mukaan:
-      </label>
-      <select id="areaFilter" class="area-filter">
-        <option value="">Kaikki alueet (${items.length} ilmoitusta)</option>
-        ${areaOptions}
-      </select>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="typeFilter" class="filter-label">
+          <svg class="filter-icon" viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          Ilmoitustyyppi:
+        </label>
+        <select id="typeFilter" class="area-filter">
+          <option value="FOUND" selected>Löytyneet (${itemTypeCounts.FOUND})</option>
+          <option value="LOST">Kadonneet (${itemTypeCounts.LOST})</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="areaFilter" class="filter-label">
+          <svg class="filter-icon" viewBox="0 0 24 24">
+            <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+          </svg>
+          Suodata alueen mukaan:
+        </label>
+        <select id="areaFilter" class="area-filter">
+          <option value="">Kaikki alueet (${items.length} ilmoitusta)</option>
+          ${areaOptions}
+        </select>
+      </div>
+
       <div class="area-stats">
-        <span id="selectedAreaCount">${items.length}</span> ilmoitusta näytetään
+        <span id="selectedAreaCount">${items.filter((i) => i.type === "FOUND").length}</span> ilmoitusta näytetään
       </div>
     </div>
   `;
 
-  // Luo HTML-sisältö
   let itemsHtml = "";
   if (items.length === 0) {
     itemsHtml = `
@@ -182,81 +195,83 @@ function generateHtml({ items, areas }) {
       </div>
     `;
   } else {
-    itemsHtml = items.map(item => `
-      <article class="item-card" data-id="${item.id}" data-category="${item.category}" data-area="${escapeHtml(item.area)}">
-        <div class="item-image-container">
-          ${item.imageUrl ? `
-            <img src="${item.imageUrl}" 
-                 alt="${escapeHtml(item.title)}" 
-                 class="item-image"
-                 loading="lazy"
-                 onerror="this.parentElement.innerHTML='<div class=\"item-image-placeholder\"><span>Kuva ei saatavilla</span></div>'">
-          ` : `
-            <div class="item-image-placeholder">
-              <span>Ei kuvaa</span>
+    itemsHtml = items
+      .map(
+        (item) => `
+        <article class="item-card" data-id="${item.id}" data-category="${item.category}" data-area="${escapeHtml(
+          item.area,
+        )}" data-type="${item.type}">
+          <div class="item-image-container">
+            ${item.imageUrl ? `
+              <img src="${item.imageUrl}"
+                   alt="${escapeHtml(item.title)}"
+                   class="item-image"
+                   loading="lazy"
+                   onerror="this.parentElement.innerHTML='<div class="item-image-placeholder"><span>Kuva ei saatavilla</span></div>'">
+            ` : `
+              <div class="item-image-placeholder">
+                <span>Ei kuvaa</span>
+              </div>
+            `}
+            <div class="item-status status-${item.status.toLowerCase()}">
+              ${item.status === "APPROVED" ? "Avoin" : "Ratkaistu"}
             </div>
-          `}
-          <div class="item-status status-${item.status.toLowerCase()}">
-            ${item.status === "APPROVED" ? "Avoin" : "Ratkaistu"}
           </div>
-        </div>
-        
-        <div class="item-content">
-          <div class="item-header">
-            <h3 class="item-title">
-              ${escapeHtml(item.title)}
-            </h3>
-            ${item.facebookLink ? `
-              <a href="${escapeHtml(item.facebookLink)}" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 class="facebook-icon-link"
-                 title="Facebook-ilmoitus">
-                <svg class="facebook-icon" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </a>
-            ` : ''}
+
+          <div class="item-content">
+            <div class="item-header">
+              <h3 class="item-title">${escapeHtml(item.title)}</h3>
+              ${item.facebookLink ? `
+                <a href="${escapeHtml(item.facebookLink)}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="facebook-icon-link"
+                   title="Facebook-ilmoitus">
+                  <svg class="facebook-icon" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </a>
+              ` : ""}
+            </div>
+
+            <div class="item-meta">
+              <span class="meta-item">
+                <svg class="icon"><use href="#icon-location"></use></svg>
+                ${escapeHtml(item.area)}
+              </span>
+
+              <span class="meta-item">
+                <svg class="icon"><use href="#icon-category"></use></svg>
+                ${getCategoryName(item.category)}
+              </span>
+
+              <span class="meta-item">
+                <svg class="icon"><use href="#icon-date"></use></svg>
+                ${formatDate(item.timestamp)}
+              </span>
+            </div>
+
+            <p class="item-description">${truncateText(escapeHtml(item.description), 120)}</p>
+
+            <div class="item-actions">
+              <span class="item-id">#${item.id}</span>
+              ${item.facebookLink ? `
+                <a href="${escapeHtml(item.facebookLink)}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="btn-facebook">
+                  <svg class="facebook-icon-small" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  Facebook
+                </a>
+              ` : ""}
+            </div>
           </div>
-          
-          <div class="item-meta">
-            <span class="meta-item">
-              <svg class="icon"><use href="#icon-location"></use></svg>
-              ${escapeHtml(item.area)}
-            </span>
-            
-            <span class="meta-item">
-              <svg class="icon"><use href="#icon-category"></use></svg>
-              ${getCategoryName(item.category)}
-            </span>
-            
-            <span class="meta-item">
-              <svg class="icon"><use href="#icon-date"></use></svg>
-              ${formatDate(item.timestamp)}
-            </span>
-          </div>
-          
-          <p class="item-description">
-            ${truncateText(escapeHtml(item.description), 120)}
-          </p>
-          
-          <div class="item-actions">
-            <span class="item-id">#${item.id}</span>
-            ${item.facebookLink ? `
-              <a href="${escapeHtml(item.facebookLink)}" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 class="btn-facebook">
-                <svg class="facebook-icon-small" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                Facebook
-              </a>
-            ` : ''}
-          </div>
-        </div>
-      </article>
-    `).join("");
+        </article>
+      `,
+      )
+      .join("");
   }
 
   return `<!DOCTYPE html>
@@ -264,11 +279,11 @@ function generateHtml({ items, areas }) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Löytyneet tavarat - ${date.toLocaleDateString("fi-FI")}</title>
-  <meta name="description" content="Automaattisesti päivittyvä lista löydetyistä tavaroista. ${items.length} ilmoitusta saatavilla.">
+  <title>Löytyneet ja kadonneet tavarat - ${date.toLocaleDateString("fi-FI")}</title>
+  <meta name="description" content="Vaihtuva lista kadonneista ja löydetyistä tavaroista. ${items.length} ilmoitusta saatavilla.">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
+    body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
       line-height: 1.6;
       color: #333;
@@ -277,7 +292,7 @@ function generateHtml({ items, areas }) {
       margin: 0 auto;
       padding: 20px;
     }
-    
+
     header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -286,18 +301,11 @@ function generateHtml({ items, areas }) {
       margin-bottom: 2rem;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    .subtitle {
-      font-size: 1.1rem;
-      opacity: 0.9;
-      margin-bottom: 1rem;
-    }
-    
+
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+    .subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 1rem; }
+
     .build-info {
       font-size: 0.9rem;
       opacity: 0.8;
@@ -306,8 +314,8 @@ function generateHtml({ items, areas }) {
       border-radius: 6px;
       display: inline-block;
     }
-    
-    .area-filter-container {
+
+    .filter-row {
       background: white;
       padding: 1.5rem;
       border-radius: 10px;
@@ -315,10 +323,12 @@ function generateHtml({ items, areas }) {
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
-      gap: 1rem;
+      align-items: end;
+      gap: 1.2rem;
     }
-    
+
+    .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
     .filter-label {
       display: flex;
       align-items: center;
@@ -327,16 +337,11 @@ function generateHtml({ items, areas }) {
       color: #4b5563;
       white-space: nowrap;
     }
-    
-    .filter-icon {
-      width: 20px;
-      height: 20px;
-      fill: #667eea;
-    }
-    
+
+    .filter-icon { width: 20px; height: 20px; fill: #667eea; }
+
     .area-filter {
-      flex: 1;
-      min-width: 200px;
+      min-width: 220px;
       padding: 10px 15px;
       border: 2px solid #e5e7eb;
       border-radius: 8px;
@@ -346,38 +351,34 @@ function generateHtml({ items, areas }) {
       transition: border-color 0.2s;
       cursor: pointer;
     }
-    
-    .area-filter:hover {
-      border-color: #9ca3af;
-    }
-    
+
+    .area-filter:hover { border-color: #9ca3af; }
+
     .area-filter:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-    
+
     .area-stats {
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: #6b7280;
       padding: 5px 10px;
       background: #f3f4f6;
       border-radius: 6px;
       white-space: nowrap;
+      margin-bottom: 2px;
     }
-    
-    #selectedAreaCount {
-      font-weight: bold;
-      color: #667eea;
-    }
-    
+
+    #selectedAreaCount { font-weight: bold; color: #667eea; }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
       margin-bottom: 2rem;
     }
-    
+
     .stat-card {
       background: white;
       padding: 1.5rem;
@@ -385,26 +386,17 @@ function generateHtml({ items, areas }) {
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       text-align: center;
     }
-    
-    .stat-number {
-      font-size: 2rem;
-      font-weight: bold;
-      display: block;
-      color: #667eea;
-    }
-    
-    .stat-label {
-      font-size: 0.9rem;
-      color: #666;
-    }
-    
+
+    .stat-number { font-size: 2rem; font-weight: bold; display: block; color: #667eea; }
+    .stat-label { font-size: 0.9rem; color: #666; }
+
     .items-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1.5rem;
       margin-bottom: 3rem;
     }
-    
+
     .item-card {
       background: white;
       border-radius: 12px;
@@ -412,59 +404,35 @@ function generateHtml({ items, areas }) {
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
     }
-    
-    .item-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-    }
-    
-    .item-card.hidden {
-      display: none;
-    }
-    
-    .item-image-container {
-      position: relative;
-      height: 200px;
-      background: #f0f0f0;
-    }
-    
-    .item-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    
+
+    .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.12); }
+    .item-card.hidden { display: none; }
+
+    .item-image-container { position: relative; height: 200px; background: #f0f0f0; }
+    .item-image { width: 100%; height: 100%; object-fit: cover; }
+
     .item-image-placeholder {
-<<<<<<< HEAD
-=======
       position: relative;
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100%;
-<<<<<<< HEAD
-      color: #999;
-      font-size: 0.9rem;
-=======
       color: #64748b;
       font-size: 0.9rem;
       background-color: #f1f5f9;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 120'%3E%3Cstyle%3Etext%7Bfill:%232e7d32;font-family:'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:800;opacity:0.22;%7D%3C/style%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle'%3ELost%20Re%20Found%3C/text%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: center;
       background-size: 70%;
     }
-    
+
     .item-image-placeholder span {
       position: relative;
       z-index: 1;
       background: rgba(255,255,255,0.8);
       padding: 0.25rem 0.5rem;
       border-radius: 0.5rem;
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
     }
-    
+
     .item-status {
       position: absolute;
       top: 12px;
@@ -476,35 +444,15 @@ function generateHtml({ items, areas }) {
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    
-    .status-approved {
-      background: #10b981;
-      color: white;
-    }
-    
-    .status-resolved {
-      background: #3b82f6;
-      color: white;
-    }
-    
-    .item-content {
-      padding: 1.5rem;
-    }
-    
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 0.75rem;
-    }
-    
-    .item-title {
-      font-size: 1.25rem;
-      color: #1f2937;
-      margin: 0;
-      flex: 1;
-    }
-    
+
+    .status-approved { background: #10b981; color: white; }
+    .status-resolved { background: #3b82f6; color: white; }
+
+    .item-content { padding: 1.5rem; }
+
+    .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+    .item-title { font-size: 1.25rem; color: #1f2937; margin: 0; flex: 1; }
+
     .facebook-icon-link {
       display: inline-flex;
       align-items: center;
@@ -513,51 +461,18 @@ function generateHtml({ items, areas }) {
       opacity: 0.8;
       transition: opacity 0.2s;
     }
-    
-    .facebook-icon-link:hover {
-      opacity: 1;
-    }
-    
-    .facebook-icon {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-    
-    .facebook-icon-small {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
-    
-    .item-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-      color: #6b7280;
-    }
-    
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    .icon {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
-    
-    .item-description {
-      color: #4b5563;
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-    
+
+    .facebook-icon-link:hover { opacity: 1; }
+
+    .facebook-icon { width: 24px; height: 24px; fill: currentColor; }
+    .facebook-icon-small { width: 16px; height: 16px; fill: currentColor; }
+
+    .item-meta { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: #6b7280; }
+    .meta-item { display: flex; align-items: center; gap: 4px; }
+    .icon { width: 16px; height: 16px; fill: currentColor; }
+
+    .item-description { color: #4b5563; margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.5; }
+
     .item-actions {
       display: flex;
       justify-content: space-between;
@@ -566,7 +481,7 @@ function generateHtml({ items, areas }) {
       padding-top: 1rem;
       border-top: 1px solid #e5e7eb;
     }
-    
+
     .btn-facebook {
       display: inline-flex;
       align-items: center;
@@ -580,17 +495,11 @@ function generateHtml({ items, areas }) {
       font-weight: 500;
       transition: background 0.2s;
     }
-    
-    .btn-facebook:hover {
-      background: #166FE5;
-    }
-    
-    .item-id {
-      font-size: 0.8rem;
-      color: #9ca3af;
-      font-family: monospace;
-    }
-    
+
+    .btn-facebook:hover { background: #166FE5; }
+
+    .item-id { font-size: 0.8rem; color: #9ca3af; font-family: monospace; }
+
     footer {
       text-align: center;
       padding: 2rem 0;
@@ -599,44 +508,36 @@ function generateHtml({ items, areas }) {
       border-top: 1px solid #e5e7eb;
       margin-top: 3rem;
     }
-    
-    footer a {
-      color: #667eea;
-      text-decoration: none;
-    }
-    
-    footer a:hover {
-      text-decoration: underline;
-    }
-    
-    /* Responsiivisuus */
+
+    footer a { color: #667eea; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
     @media (max-width: 768px) {
       body { padding: 15px; }
       h1 { font-size: 2rem; }
       .items-grid { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr; }
-      .area-filter-container { flex-direction: column; align-items: stretch; }
+      .filter-row { flex-direction: column; align-items: stretch; }
       .area-filter { min-width: auto; }
     }
-    
+
     @media (max-width: 480px) {
       header { padding: 1.5rem; }
       .item-meta { flex-direction: column; gap: 0.5rem; }
       .item-header { flex-direction: column; }
-      .facebook-icon-link { margin-left: 0; margin-top: 5px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>📦 Löytyneet tavarat</h1>
-    <p class="subtitle">Automaattisesti päivittyvä lista löydetyistä tavaroista</p>
+    <h1>📦 Kadonneet &amp; löytyneet tavarat</h1>
+    <p class="subtitle">Valitse yläreunasta kumpia ilmoituksia näytetään – samalla sivulla.</p>
     <span class="build-info">Viimeisin päivitys: ${formattedDate}</span>
   </header>
 
   <main>
     ${areaFilterHtml}
-    
+
     <div class="stats-grid">
       <div class="stat-card">
         <span class="stat-number">${items.length}</span>
@@ -667,7 +568,7 @@ function generateHtml({ items, areas }) {
 
   <footer>
     <p>
-      Tämä sivu on staattinen snapshot <a href="https://lostrefound.blogspot.com">Lost&Found</a>-sovelluksesta.
+      Tämä sivu on staattinen snapshot <a href="https://lostrefound.blogspot.com">Lost&amp;Found</a>-sovelluksesta.
       Data päivittyy automaattisesti tunnin välein.
     </p>
     <p>
@@ -677,7 +578,6 @@ function generateHtml({ items, areas }) {
     </p>
   </footer>
 
-  <!-- SVG icons -->
   <svg style="display: none;">
     <defs>
       <symbol id="icon-location" viewBox="0 0 24 24">
@@ -693,68 +593,39 @@ function generateHtml({ items, areas }) {
   </svg>
 
   <script>
-    // Alueen suodatus JavaScript
     document.addEventListener('DOMContentLoaded', function() {
+      const typeFilter = document.getElementById('typeFilter');
       const areaFilter = document.getElementById('areaFilter');
-      const itemsContainer = document.getElementById('itemsContainer');
       const itemCards = document.querySelectorAll('.item-card');
       const selectedAreaCount = document.getElementById('selectedAreaCount');
-      
-      // Alusta URL-hashista jos on valittu alue
-      const urlParams = new URLSearchParams(window.location.hash.substring(1));
-      const initialArea = urlParams.get('area');
-      if (initialArea) {
-        areaFilter.value = initialArea;
-        filterByArea(initialArea);
-      }
-      
-      // Suodatus tapahtuma
-      areaFilter.addEventListener('change', function() {
-        const selectedArea = this.value;
-        filterByArea(selectedArea);
-        
-        // Päivitä URL hash (ei lataa sivua uudelleen)
-        if (selectedArea) {
-          window.location.hash = 'area=' + encodeURIComponent(selectedArea);
-        } else {
-          window.location.hash = '';
-        }
-      });
-      
-      // Suodata ilmoitukset alueen mukaan
-      function filterByArea(area) {
+
+      function applyFilters() {
+        const selectedType = typeFilter.value;
+        const selectedArea = areaFilter.value;
+
         let visibleCount = 0;
-        
         itemCards.forEach(card => {
+          const cardType = card.getAttribute('data-type');
           const cardArea = card.getAttribute('data-area');
-          
-          if (!area || cardArea === area) {
+
+          const matchesType = !selectedType || cardType === selectedType;
+          const matchesArea = !selectedArea || cardArea === selectedArea;
+
+          if (matchesType && matchesArea) {
             card.classList.remove('hidden');
             visibleCount++;
           } else {
             card.classList.add('hidden');
           }
         });
-        
-        // Päivitä näytettyjen ilmoitusten määrä
+
         selectedAreaCount.textContent = visibleCount;
-        
-        // Päivitä stats-korttien numeroita (valinnainen)
-        updateStatsForArea(area, visibleCount);
       }
-      
-      // Päivitä stats-kortit suodatetulle alueelle (valinnainen)
-      function updateStatsForArea(area, visibleCount) {
-        // Voit lisätä tähän logiikan statsien päivittämiseen
-        // Esim. näytetään vain suodatetun alueen Facebook-linkit jne.
-      }
-      
-      // Automaattinen skrollaus aluevalintaan mobiilissa (valinnainen)
-      areaFilter.addEventListener('focus', function() {
-        if (window.innerWidth < 768) {
-          this.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      });
+
+      typeFilter.addEventListener('change', applyFilters);
+      areaFilter.addEventListener('change', applyFilters);
+
+      applyFilters();
     });
   </script>
 </body>
@@ -764,64 +635,53 @@ function generateHtml({ items, areas }) {
 // 3. Pääfunktio
 async function main() {
   console.log("🚀 Starting snapshot build...");
-  
+
   try {
-    // Hae data ja alueet
     const { items, areas } = await fetchData();
-    
-    // Generoi HTML
+
     const html = generateHtml({ items, areas });
-    
-    // Varmista dist-kansio
+
     const distDir = path.join(__dirname, "../dist");
     if (!existsSync(distDir)) {
       await mkdir(distDir, { recursive: true });
     }
-    
-    // Tallenna HTML
+
     const outputPath = path.join(distDir, "index.html");
     await writeFile(outputPath, html, "utf-8");
-    
-    // Tallenna JSON-data
+
     const jsonData = {
       timestamp: new Date().toISOString(),
       buildId: process.env.BUILD_TIMESTAMP || "local",
-      items: items.map(item => ({
+      items: items.map((item) => ({
         id: item.id,
         title: item.title,
         area: item.area,
         category: item.category,
+        type: item.type,
         status: item.status,
         description: item.description,
         imageUrl: item.imageUrl,
-<<<<<<< HEAD
-        type: item.type,
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
         facebookLink: item.facebookLink,
-        timestamp: item.timestamp
+        timestamp: item.timestamp,
       })),
-      areas: areas // Lisätty myös alueet JSON-dataan
+      areas,
     };
-    
+
     await writeFile(
       path.join(distDir, "data.json"),
       JSON.stringify(jsonData, null, 2),
-      "utf-8"
+      "utf-8",
     );
-    
-    console.log(`✅ Build completed!`);
+
+    console.log("✅ Build completed!");
     console.log(`📁 Output: ${outputPath}`);
     console.log(`📊 Items: ${items.length}`);
-    console.log(`🗺️  Areas: ${areas.length} (${areas.join(', ')})`);
-    console.log(`📘 Facebook-linkkejä: ${items.filter(i => i.facebookLink).length}`);
-    console.log(`⚡ Build ID: ${process.env.BUILD_TIMESTAMP || "local"}`);
-    
+    console.log(`🗺️ Areas: ${areas.length} (${areas.join(", ")})`);
   } catch (error) {
     console.error("❌ Build failed:", error);
     process.exit(1);
   }
 }
 
-// Suorita
 main();
+
