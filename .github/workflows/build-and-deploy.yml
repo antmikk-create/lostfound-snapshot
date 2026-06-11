@@ -7,6 +7,9 @@ on:
   push:
     branches: [ main ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
   pages: write
@@ -28,32 +31,6 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
-      
-      - name: Create Firebase credentials file
-        id: create_firebase_creds
-        run: |
-          # Kirjoita JSON suoraan tiedostoon ilman shell-käsittelyä
-          cat > firebase-service-account.json << 'EOF'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          EOF
-          
-          # Tarkista että tiedosto luotiin
-          if [ -f "firebase-service-account.json" ]; then
-            echo "✅ Firebase credentials file created"
-            echo "📄 File size: $(wc -c < firebase-service-account.json) bytes"
-            
-            # Testaa että JSON on validia
-            if jq empty firebase-service-account.json 2>/dev/null; then
-              echo "✅ JSON is valid"
-              echo "project_id=$(jq -r '.project_id' firebase-service-account.json)" >> $GITHUB_OUTPUT
-            else
-              echo "❌ JSON is invalid"
-              exit 1
-            fi
-          else
-            echo "❌ Failed to create Firebase credentials file"
-            exit 1
-          fi
       
       - name: Build snapshot
         run: npm run build
