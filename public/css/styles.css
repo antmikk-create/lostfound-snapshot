@@ -1,4 +1,4 @@
-﻿/* Reset & Base Styles */
+/* Reset & Base Styles */
 * {
     margin: 0;
     padding: 0;
@@ -201,18 +201,11 @@ body {
 }
 
 .no-image {
-<<<<<<< HEAD
-=======
     position: relative;
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-<<<<<<< HEAD
-    color: #94a3b8;
-    font-size: 0.9rem;
-=======
     color: #64748b;
     font-size: 0.9rem;
     background-color: #f1f5f9;
@@ -228,7 +221,6 @@ body {
     background: rgba(255,255,255,0.8);
     padding: 0.25rem 0.5rem;
     border-radius: 0.5rem;
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
 }
 
 .item-status {

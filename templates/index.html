@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
@@ -33,7 +33,6 @@
         <div class="filters-container">
             <div class="filters">
                 <div class="filter-group">
-<<<<<<< HEAD
                     <label for="typeFilter" class="filter-label">
                         <svg class="filter-icon" viewBox="0 0 24 24">
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -47,8 +46,6 @@
                 </div>
 
                 <div class="filter-group">
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
                     <label for="areaFilter" class="filter-label">
                         <svg class="filter-icon" viewBox="0 0 24 24">
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -61,10 +58,7 @@
                     </select>
                 </div>
                 
-<<<<<<< HEAD
-                
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
+
                 <div class="filter-group">
                     <label for="categoryFilter" class="filter-label">
                         <svg class="filter-icon" viewBox="0 0 24 24">
@@ -138,10 +132,7 @@
 
     <!-- SVG SPRITE FOR ICONS -->
     <svg style="display: none;">
-<<<<<<< HEAD
 
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
         <defs>
             <symbol id="icon-location" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -186,44 +177,24 @@
                 // Get unique areas
                 const areas = [...new Set(items.map(i => i.area).filter(Boolean))].sort();
                 const areaSelect = document.getElementById('areaFilter');
-<<<<<<< HEAD
 
-=======
-                
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
                 areas.forEach(area => {
                     const option = document.createElement('option');
                     option.value = area;
                     option.textContent = area;
                     areaSelect.appendChild(option);
                 });
-<<<<<<< HEAD
-
                 // Get unique categories
                 const categories = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
                 const categorySelect = document.getElementById('categoryFilter');
-
-=======
-                
-                // Get unique categories
-                const categories = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
-                const categorySelect = document.getElementById('categoryFilter');
-                
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
                 categories.forEach(category => {
                     const option = document.createElement('option');
                     option.value = category;
                     option.textContent = getCategoryDisplayName(category);
                     categorySelect.appendChild(option);
                 });
-<<<<<<< HEAD
-
                 // Add event listeners
                 document.getElementById('typeFilter').addEventListener('change', filterItems);
-=======
-                
-                // Add event listeners
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
                 document.getElementById('areaFilter').addEventListener('change', filterItems);
                 document.getElementById('categoryFilter').addEventListener('change', filterItems);
                 document.getElementById('statusFilter').addEventListener('change', filterItems);
@@ -232,21 +203,14 @@
             
             function filterItems() {
                 const area = document.getElementById('areaFilter').value;
-<<<<<<< HEAD
                 const type = document.getElementById('typeFilter').value;
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
                 const category = document.getElementById('categoryFilter').value;
                 const status = document.getElementById('statusFilter').value;
                 const search = document.getElementById('searchInput').value.toLowerCase();
                 
                 const filtered = window.allItems.filter(item => {
-<<<<<<< HEAD
                     // Type filter
                     if (type && item.type !== type) return false;
-
-=======
->>>>>>> 3e496024ffffca2c7e5f7525ebe7b16a37a1ea1a
                     // Area filter
                     if (area && item.area !== area) return false;
                     
