@@ -10,17 +10,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.join(__dirname, "../.env") });
 
 function escapeHtml(text) {
-  if (!text) return "";
+  if (text === null || text === undefined) return "";
   return String(text)
     .replace(/&/g, "&amp;")
     .replace(/</g, "<")
     .replace(/>/g, ">")
-    .replace(/\"/g, """)
+    .replace(/"/g, """)
     .replace(/'/g, "&#039;");
 }
 
 function truncateText(text, maxLength) {
-  if (!text) return "";
+  if (text === null || text === undefined) return "";
   const s = String(text);
   if (s.length <= maxLength) return s;
   return s.substring(0, maxLength) + "...";
@@ -74,13 +74,7 @@ async function fetchData() {
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-    const items = [];
-    const areasSet = new Set();
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-
-      // Muunna kuvan URL oikeaan muotoon
       let imageUrl = null;
       if (data.imageUrl1) {
         if (data.imageUrl1.includes("http")) {
@@ -124,8 +118,8 @@ async function fetchData() {
 }
 
 function generateHtml({ items, areas }) {
-  const date = new Date();
-  const formattedDate = date.toLocaleDateString("fi-FI", {
+  const now = new Date();
+  const formattedDate = now.toLocaleDateString("fi-FI", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -140,13 +134,12 @@ function generateHtml({ items, areas }) {
   const facebookCount = items.filter((i) => i.facebookLink).length;
 
   const areaOptions = areas
-    .map(
-      (area) => `
-        <option value="${escapeHtml(area)}">${escapeHtml(area)}</option>
-      `,
-    )
+    .map((area) => `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`)
     .join("");
 
+  const itemTypeCounts = {
+    FOUND: items.filter((i) => i.type === "FOUND").length,
+    LOST: items.filter((i) => i.type === "LOST").length,
   const itemTypeCounts = {
     FOUND: items.filter((i) => i.type === "FOUND").length,
     LOST: items.filter((i) => i.type === "LOST").length,
@@ -165,6 +158,11 @@ function generateHtml({ items, areas }) {
           <option value="FOUND" selected>Löytyneet (${itemTypeCounts.FOUND})</option>
           <option value="LOST">Kadonneet (${itemTypeCounts.LOST})</option>
         </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="areaFilter" class="filter-label">
+          <svg class="filter-icon" viewBox="0 0 24 24">
       </div>
 
       <div class="filter-group">
