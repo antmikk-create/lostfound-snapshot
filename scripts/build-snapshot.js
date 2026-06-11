@@ -95,12 +95,16 @@ async function fetchData() {
       const area = data.area || "Tuntematon";
       areasSet.add(area); // Lisää alue listaan
 
+      const category = data.category || "OTHER";
+      const type = category === "LOST" ? "LOST" : "FOUND";
+
       items.push({
         id: doc.id,
         title: data.title || "Ei nimeä",
         description: data.description || "",
         area: area,
-        category: data.category || "OTHER",
+        category,
+        type,
         status: data.status || "APPROVED",
         timestamp: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
         imageUrl: imageUrl,
@@ -761,6 +765,7 @@ async function main() {
         status: item.status,
         description: item.description,
         imageUrl: item.imageUrl,
+        type: item.type,
         facebookLink: item.facebookLink,
         timestamp: item.timestamp
       })),

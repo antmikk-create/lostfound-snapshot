@@ -33,6 +33,19 @@
         <div class="filters-container">
             <div class="filters">
                 <div class="filter-group">
+                    <label for="typeFilter" class="filter-label">
+                        <svg class="filter-icon" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        Ilmoitustyyppi:
+                    </label>
+                    <select id="typeFilter" class="filter-select">
+                        <option value="FOUND" selected>Löytyneet</option>
+                        <option value="LOST">Kadonneet</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
                     <label for="areaFilter" class="filter-label">
                         <svg class="filter-icon" viewBox="0 0 24 24">
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -44,6 +57,7 @@
                         <!-- Areas populated by JS -->
                     </select>
                 </div>
+                
                 
                 <div class="filter-group">
                     <label for="categoryFilter" class="filter-label">
@@ -118,6 +132,7 @@
 
     <!-- SVG SPRITE FOR ICONS -->
     <svg style="display: none;">
+
         <defs>
             <symbol id="icon-location" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -162,26 +177,27 @@
                 // Get unique areas
                 const areas = [...new Set(items.map(i => i.area).filter(Boolean))].sort();
                 const areaSelect = document.getElementById('areaFilter');
-                
+
                 areas.forEach(area => {
                     const option = document.createElement('option');
                     option.value = area;
                     option.textContent = area;
                     areaSelect.appendChild(option);
                 });
-                
+
                 // Get unique categories
                 const categories = [...new Set(items.map(i => i.category).filter(Boolean))].sort();
                 const categorySelect = document.getElementById('categoryFilter');
-                
+
                 categories.forEach(category => {
                     const option = document.createElement('option');
                     option.value = category;
                     option.textContent = getCategoryDisplayName(category);
                     categorySelect.appendChild(option);
                 });
-                
+
                 // Add event listeners
+                document.getElementById('typeFilter').addEventListener('change', filterItems);
                 document.getElementById('areaFilter').addEventListener('change', filterItems);
                 document.getElementById('categoryFilter').addEventListener('change', filterItems);
                 document.getElementById('statusFilter').addEventListener('change', filterItems);
@@ -190,11 +206,15 @@
             
             function filterItems() {
                 const area = document.getElementById('areaFilter').value;
+                const type = document.getElementById('typeFilter').value;
                 const category = document.getElementById('categoryFilter').value;
                 const status = document.getElementById('statusFilter').value;
                 const search = document.getElementById('searchInput').value.toLowerCase();
                 
                 const filtered = window.allItems.filter(item => {
+                    // Type filter
+                    if (type && item.type !== type) return false;
+
                     // Area filter
                     if (area && item.area !== area) return false;
                     
